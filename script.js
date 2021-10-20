@@ -1,15 +1,31 @@
-console.log("Hooray, my first line of JavaScript!");
+function Message(textBody) {
+    this.textBody = textBody;
+}
 
-const TYPE_USER = "user";
-const TYPE_SYSTEM = "system";
+Message.prototype.render = function(){console.log(this.textBody);}
 
-const createMessage = (sender, text, type) => ({textBody: text, sender, type, render});
+function UserMessage(sender, textBody) {
+    Message.call(this, textBody);
+    this.sender = sender;
+}
 
-const messages = [createMessage("", "Alice joined the chat", TYPE_SYSTEM),
-                  createMessage("", "Bob joined the chat", TYPE_SYSTEM),
-                  createMessage("Bob", "Hello Alice, how are you?", TYPE_USER),
-                  createMessage("Alice", "Hi Bob, I'm fine. How are you?", TYPE_USER),
-                  createMessage("Bob", "I'm fine too.", TYPE_USER),
+UserMessage.prototype = Object.create(Message.prototype);
+UserMessage.prototype.constructor = UserMessage;
+UserMessage.prototype.render = function(){console.log(`${this.sender}: ${this.textBody}`)}
+
+function SystemMessage(textBody) {
+    Message.call(this, textBody);
+}
+
+SystemMessage.prototype = Object.create(Message.prototype);
+SystemMessage.prototype.constructor = SystemMessage;
+SystemMessage.prototype.render = function(){console.log(`...${this.textBody}...`)}
+
+const messages = [new SystemMessage("Alice joined the chat"),
+                  new SystemMessage("Bob joined the chat"),
+                  new UserMessage("Bob", "Hello Alice, how are you?"),
+                  new UserMessage("Alice", "Hi Bob, I'm fine. How are you?"),
+                  new UserMessage("Bob", "I'm fine too."),
                 ];
 
 for (const message of messages) {
@@ -18,7 +34,7 @@ for (const message of messages) {
 
 messages.forEach(message => sendMessage(message));
 
-const members = messages.filter(message => message.type === TYPE_USER).map(message => message.sender).reduce((previousValue, currentValue) => {
+const members = messages.filter(message => message instanceof UserMessage).map(message => message.sender).reduce((previousValue, currentValue) => {
     if(!previousValue.includes(currentValue)){
         previousValue.push(currentValue);
     }
@@ -27,7 +43,7 @@ const members = messages.filter(message => message.type === TYPE_USER).map(messa
 
 console.log(members);
 
-const numberOfWordsPerMember = messages.filter(message => message.type === TYPE_USER).reduce((previousValue, currentValue) => {
+const numberOfWordsPerMember = messages.filter(message => message instanceof UserMessage).reduce((previousValue, currentValue) => {
     if(previousValue[currentValue.sender]){
         previousValue[currentValue.sender] += currentValue.textBody.split(" ").length;
     } else {
@@ -42,13 +58,5 @@ function sendMessage(message){
     console.log(message);
     if(message.render){
         console.log(message.render());
-    }
-}
-
-function render(){
-    if(this.type === TYPE_USER){
-        return `${this.sender}: ${this.textBody}`;
-    } else if(this.type == TYPE_SYSTEM) {
-        return `...${this.textBody}...`;
     }
 }
