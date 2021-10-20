@@ -5,15 +5,38 @@ const TYPE_SYSTEM = "system";
 
 const createMessage = (sender, text, type) => ({textBody: text, sender, type, render});
 
-const m1 = createMessage("", "Alice joined the chat", TYPE_SYSTEM);
-const m2 = createMessage("", "Bob joined the chat", TYPE_SYSTEM);
-const m3 = createMessage("Bob", "Hello Alice, how are you?", TYPE_USER);
-const m4 = createMessage("Alice", "Hi Bob, I'm fine. How are you?", TYPE_USER);
+const messages = [createMessage("", "Alice joined the chat", TYPE_SYSTEM),
+                  createMessage("", "Bob joined the chat", TYPE_SYSTEM),
+                  createMessage("Bob", "Hello Alice, how are you?", TYPE_USER),
+                  createMessage("Alice", "Hi Bob, I'm fine. How are you?", TYPE_USER),
+                  createMessage("Bob", "I'm fine too.", TYPE_USER),
+                ];
 
-sendMessage(m1);
-sendMessage(m2);
-sendMessage(m3);
-sendMessage(m4);
+for (const message of messages) {
+    sendMessage(message);            
+}
+
+messages.forEach(message => sendMessage(message));
+
+const members = messages.filter(message => message.type === TYPE_USER).map(message => message.sender).reduce((previousValue, currentValue) => {
+    if(!previousValue.includes(currentValue)){
+        previousValue.push(currentValue);
+    }
+    return previousValue;
+},[]);
+
+console.log(members);
+
+const numberOfWordsPerMember = messages.filter(message => message.type === TYPE_USER).reduce((previousValue, currentValue) => {
+    if(previousValue[currentValue.sender]){
+        previousValue[currentValue.sender] += currentValue.textBody.split(" ").length;
+    } else {
+        previousValue[currentValue.sender] = currentValue.textBody.split(" ").length;
+    }
+    return previousValue;
+}, {});
+console.log(numberOfWordsPerMember);
+
 
 function sendMessage(message){
     console.log(message);
