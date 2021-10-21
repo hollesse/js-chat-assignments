@@ -4,7 +4,14 @@ class Message {
     }
 
     render() {
-        return `${this.sender}: ${this.textBody}`; 
+        return `${this.textBody}`; 
+    }
+
+    renderHTML(){
+        const liElement = document.createElement("li");
+        liElement.textContent = this.render();
+        
+        return liElement;
     }
 }
 
@@ -17,6 +24,17 @@ class UserMessage extends Message {
     render() {
         return `${this.sender}: ${this.textBody}`;
     }
+
+    renderHTML(){
+        const liElement = document.createElement("li");
+        const bElement = document.createElement("b");
+        bElement.textContent = this.sender;
+        liElement.appendChild(bElement);
+        const textNode = document.createTextNode(`: ${this.textBody}`);
+        liElement.appendChild(textNode);
+
+        return liElement;
+    }
 }
 
 class SystemMessage extends Message {
@@ -27,6 +45,20 @@ class SystemMessage extends Message {
     render() {
         return `...${this.textBody}...`;
     }
+
+    renderHTML(){
+        const liElement = document.createElement("li");
+        const emElement = document.createElement("em");
+        emElement.textContent = this.render();
+        liElement.appendChild(emElement);
+        return liElement;
+    }
+}
+
+class NewUserJoinedMessage extends SystemMessage {
+    constructor(username){
+        super(`${username} joined the chat`);
+    }
 }
 
 class Chat {
@@ -36,10 +68,7 @@ class Chat {
 
     sendMessage(message) {
         this.messages.push(message);
-        console.log(message);
-        if(message.render){
-            console.log(message.render());
-        }
+        document.getElementById("messages").appendChild(message.renderHTML());
     }
 
     members() {
@@ -49,6 +78,10 @@ class Chat {
             }
             return previousValue;
         },[]);
+    }
+
+    isNewMember(username) {
+        return !this.members().includes(username);
     }
 
     wordsPerMember() {
@@ -63,15 +96,38 @@ class Chat {
     }
 }
 
-const chat = new Chat();
-const initialMessages = [new SystemMessage("Alice joined the chat"),
-                  new SystemMessage("Bob joined the chat"),
-                  new UserMessage("Bob", "Hello Alice, how are you?"),
-                  new UserMessage("Alice", "Hi Bob, I'm fine. How are you?"),
-                  new UserMessage("Bob", "I'm fine too."),
-                ];
+window.addEventListener("load", () => {
+    const chat = new Chat();
+    document.getElementById("messageForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        username = document.getElementById("username").value;
+        message = document.getElementById("message").value;
+        document.getElementById("message").value = "";
+        if(chat.isNewMember(username)){
+            chat.sendMessage(new NewUserJoinedMessage(username));
+            chat.sendMessage(new UserMessage(username, message));
+            updateMemberList(chat.members());
+        } else {
+            chat.sendMessage(new UserMessage(username, message));
+        }
+        
+        console.log(chat.wordsPerMember());
+    })
+})
 
-initialMessages.forEach(message => chat.sendMessage(message));
+function updateMemberList(newMemberList) {
+    memberListElement = document.getElementById("members");
+    removeChildren(memberListElement);
+    newMemberList.map(member => {
+            const listItem = document.createElement("li");
+            listItem.textContent = member;
+            return listItem;
+        })
+        .forEach(listItem => memberListElement.appendChild(listItem));
+}
 
-console.log(chat.members());
-console.log(chat.wordsPerMember());
+function removeChildren(parent) {
+    while (parent.lastChild) {
+        parent.removeChild(parent.lastChild);
+    }
+}
