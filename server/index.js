@@ -15,7 +15,7 @@ app.get('/api/messages', (req, res) => {
 })
 
 app.post('/api/messages', (req, res) => {
-    console.log(req);
+    console.log(req.body);
     messages.push(req.body);
     res.status(201).end();
 })

@@ -13,6 +13,14 @@ class Message {
         
         return liElement;
     }
+
+    static fromJSON(jsonMessage){
+        if(jsonMessage.sender){
+            return new UserMessage(jsonMessage.sender, jsonMessage.textBody);
+        } else {
+            return new SystemMessage(jsonMessage.textBody);
+        }
+    }
 }
 
 class UserMessage extends Message {
@@ -66,9 +74,44 @@ class Chat {
         this.messages = [];
     }
 
-    sendMessage(message) {
-        this.messages.push(message);
-        document.getElementById("messages").appendChild(message.renderHTML());
+    async updateMessages() {
+        const response = await fetch("/api/messages", {method: "get"})
+        const responseJson = await response.json();
+        this.messages = responseJson.map(json => Message.fromJSON(json));
+        const messageList = document.getElementById("messages");
+        removeChildren(messageList);
+        this.messages.forEach(message => messageList.appendChild(message.renderHTML()));
+        this.updateMemberList();
+
+    }
+
+    updateMemberList() {
+        const memberListElement = document.getElementById("members");
+        removeChildren(memberListElement);
+        this.members().map(member => {
+                const listItem = document.createElement("li");
+                listItem.textContent = member;
+                return listItem;
+            })
+            .forEach(listItem => memberListElement.appendChild(listItem));
+    }
+
+    async sendMessage(message) {
+        const body = JSON.stringify(message)
+        await fetch("/api/messages", {method: "post", body: JSON.stringify(message), headers: {'Content-Type': 'application/json'}});
+        this.updateMessages();
+    }
+
+    sendUserMessage() {
+        username = document.getElementById("username").value;
+        message = document.getElementById("message").value;
+        document.getElementById("message").value = "";
+        if(this.isNewMember(username)){
+            this.sendMessage(new NewUserJoinedMessage(username));
+            this.sendMessage(new UserMessage(username, message));
+        } else {
+            this.sendMessage(new UserMessage(username, message));
+        }
     }
 
     members() {
@@ -98,38 +141,13 @@ class Chat {
 
 window.addEventListener("load", () => {
     const chat = new Chat();
-    document.getElementById("messageForm").addEventListener("submit", async (event) => {
+    chat.updateMessages()
+    setInterval(() => chat.updateMessages(), 500);
+    document.getElementById("messageForm").addEventListener("submit", (event) => {
         event.preventDefault();
-        username = document.getElementById("username").value;
-        message = document.getElementById("message").value;
-        document.getElementById("message").value = "";
-        await delay(1000);
-        if(chat.isNewMember(username)){
-            chat.sendMessage(new NewUserJoinedMessage(username));
-            chat.sendMessage(new UserMessage(username, message));
-            updateMemberList(chat.members());
-        } else {
-            chat.sendMessage(new UserMessage(username, message));
-        }
-        
-        console.log(chat.wordsPerMember());
+        chat.sendUserMessage();
     })
 })
-
-function delay(milliseconds) {
-    return new Promise(resolve => setTimeout(resolve, milliseconds));
-}
-
-function updateMemberList(newMemberList) {
-    memberListElement = document.getElementById("members");
-    removeChildren(memberListElement);
-    newMemberList.map(member => {
-            const listItem = document.createElement("li");
-            listItem.textContent = member;
-            return listItem;
-        })
-        .forEach(listItem => memberListElement.appendChild(listItem));
-}
 
 function removeChildren(parent) {
     while (parent.lastChild) {
