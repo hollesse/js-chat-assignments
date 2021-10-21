@@ -98,11 +98,12 @@ class Chat {
 
 window.addEventListener("load", () => {
     const chat = new Chat();
-    document.getElementById("messageForm").addEventListener("submit", (event) => {
+    document.getElementById("messageForm").addEventListener("submit", async (event) => {
         event.preventDefault();
         username = document.getElementById("username").value;
         message = document.getElementById("message").value;
         document.getElementById("message").value = "";
+        await delay(1000);
         if(chat.isNewMember(username)){
             chat.sendMessage(new NewUserJoinedMessage(username));
             chat.sendMessage(new UserMessage(username, message));
@@ -114,6 +115,10 @@ window.addEventListener("load", () => {
         console.log(chat.wordsPerMember());
     })
 })
+
+function delay(milliseconds) {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
+}
 
 function updateMemberList(newMemberList) {
     memberListElement = document.getElementById("members");
