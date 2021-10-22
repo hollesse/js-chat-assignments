@@ -1,4 +1,5 @@
 import {Chat} from './modules/chat.js'
+import {MemberList} from './components/member-list.js'
 
 const chat = new Chat();
 chat.updateMessages()

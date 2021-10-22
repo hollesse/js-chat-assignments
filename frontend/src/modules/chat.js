@@ -1,4 +1,5 @@
 import {Message, UserMessage, NewUserJoinedMessage} from './messages.js'
+import * as messageService from './../services/messages.js'
 
 export class Chat {
     constructor() {
@@ -6,17 +7,15 @@ export class Chat {
     }
 
     async updateMessages() {
-        const response = await fetch("/api/messages", {method: "get"})
-        const responseJson = await response.json();
-        this.messages = responseJson.map(json => Message.fromJSON(json));
+        this.messages = await messageService.getMessages();
         const messageList = document.getElementById("messages");
         removeChildren(messageList);
         this.messages.forEach(message => messageList.appendChild(message.renderHTML()));
-        this.updateMemberList();
+        //this.updateMemberList();
 
     }
 
-    updateMemberList() {
+    /* updateMemberList() {
         const memberListElement = document.getElementById("members");
         removeChildren(memberListElement);
         this.members().map(member => {
@@ -25,8 +24,8 @@ export class Chat {
                 return listItem;
             })
             .forEach(listItem => memberListElement.appendChild(listItem));
-    }
-
+    }*/
+ 
     async sendMessage(message) {
         const body = JSON.stringify(message)
         await fetch("/api/messages", {method: "post", body: JSON.stringify(message), headers: {'Content-Type': 'application/json'}});
@@ -45,17 +44,8 @@ export class Chat {
         }
     }
 
-    members() {
-        return this.messages.filter(message => message instanceof UserMessage).map(message => message.sender).reduce((previousValue, currentValue) => {
-            if(!previousValue.includes(currentValue)){
-                previousValue.push(currentValue);
-            }
-            return previousValue;
-        },[]);
-    }
-
     isNewMember(username) {
-        return !this.members().includes(username);
+        return !messageService.extractMembers(this.messages).includes(username);
     }
 
     wordsPerMember() {
